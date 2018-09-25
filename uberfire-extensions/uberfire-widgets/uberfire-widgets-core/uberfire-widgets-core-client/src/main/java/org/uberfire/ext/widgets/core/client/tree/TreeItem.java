@@ -17,6 +17,7 @@
 package org.uberfire.ext.widgets.core.client.tree;
 
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import com.google.gwt.core.client.GWT;
@@ -235,10 +236,25 @@ public class TreeItem<I extends TreeItem> extends Composite {
         return this.type;
     }
 
-    @SuppressWarnings("unchecked")
     public I addItem(final I item) {
+        return insert(item,
+                      -1,
+                      (t, i) -> content.add(t));
+    }
+
+
+    public I insertItem(final I item, final int beforeIndex) {
+        return insert(item,
+                      beforeIndex,
+                      (t, i) -> content.insert(t, i));
+    }
+
+    @SuppressWarnings("unchecked")
+    private I insert(final I item,
+                     final int beforeIndex,
+                     final BiConsumer<I, Integer> addItemFunction) {
         checkContainerType();
-        content.add(item);
+        addItemFunction.accept(item, beforeIndex);
         item.setTree(tree);
         item.setParentItem(this);
         return item;
@@ -251,16 +267,43 @@ public class TreeItem<I extends TreeItem> extends Composite {
     }
 
     @SuppressWarnings("unchecked")
-    public I addItem(final Type type,
+    private I insert(final Type type,
                      final String value,
                      final String label,
-                     final IsWidget icon) {
+                     final IsWidget icon,
+                     final int beforeIndex,
+                     final BiConsumer<I, Integer> addItemFunction) {
         final I child = makeChild(type,
                                   value,
                                   label,
                                   icon);
-        addItem(child);
+        addItemFunction.accept(child, beforeIndex);
         return child;
+    }
+
+    public I addItem(final Type type,
+                     final String value,
+                     final String label,
+                     final IsWidget icon) {
+       return insert(type,
+                     value,
+                     label,
+                     icon,
+                     -1,
+                     (t, i) -> addItem(t));
+    }
+
+    public I insertItem(final Type type,
+                     final String value,
+                     final String label,
+                     final IsWidget icon,
+                        final int beforeIndex) {
+        return insert(type,
+                      value,
+                      label,
+                      icon,
+                      beforeIndex,
+                      this::insertItem);
     }
 
     @SuppressWarnings("unchecked")
@@ -338,6 +381,10 @@ public class TreeItem<I extends TreeItem> extends Composite {
     public void removeItem(final I treeItem) {
         checkContainerType();
         content.remove(treeItem);
+    }
+
+    public int getItemIndex() {
+        return parentItem != null ? parentItem.content.getWidgetIndex(this) : -1;
     }
 
     public String getText() {
