@@ -57,6 +57,10 @@ public class MultiPageEditorImpl implements MultiPageEditor {
         return view.selectedPage();
     }
 
+    public void addTabBarCustomWidget(final Widget customWidget) {
+        view.addTabBarCustomWidget(customWidget);
+    }
+
     @Override
     public void clear() {
         view.clear();

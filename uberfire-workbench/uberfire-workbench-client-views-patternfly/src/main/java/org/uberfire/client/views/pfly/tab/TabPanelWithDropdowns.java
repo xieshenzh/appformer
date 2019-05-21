@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.Dependent;
 
@@ -30,6 +31,7 @@ import com.google.gwt.event.shared.HandlerRegistration;
 import com.google.gwt.uibinder.client.UiBinder;
 import com.google.gwt.uibinder.client.UiField;
 import com.google.gwt.user.client.ui.Composite;
+import com.google.gwt.user.client.ui.HorizontalPanel;
 import com.google.gwt.user.client.ui.Widget;
 import org.gwtbootstrap3.client.shared.event.TabShowEvent;
 import org.gwtbootstrap3.client.shared.event.TabShowHandler;
@@ -46,6 +48,9 @@ import org.gwtbootstrap3.client.ui.constants.IconPosition;
 import org.gwtbootstrap3.client.ui.constants.IconType;
 import org.gwtbootstrap3.client.ui.constants.Styles;
 import org.gwtbootstrap3.client.ui.constants.Toggle;
+
+import static com.google.gwt.i18n.client.HasDirection.Direction.LTR;
+import static com.google.gwt.user.client.ui.HasHorizontalAlignment.HorizontalAlignmentConstant.endOf;
 
 /**
  * A Bootstrap3 TabPanel which supports a mix of normal tabs and tabs that are dropdown menus. Selecting an item from a
@@ -97,10 +102,20 @@ public class TabPanelWithDropdowns extends Composite {
      */
     private final Set<TabPanelEntry> allContentTabs = new HashSet<TabPanelEntry>();
     /**
+     * The area that contains the tab bar and any additional custom widgets
+     */
+    @UiField
+    protected HorizontalPanel tabBarPanel;
+    /**
      * The bar at the top where the tabs sit.
      */
     @UiField
     protected NavTabs tabBar;
+    /**
+     * The area where custom widgets can be added to the right end of the tab bar
+     */
+    @UiField
+    protected HorizontalPanel customWidgetsPanel;
     /**
      * The content area that shows the content for the currently selected tab.
      */
@@ -344,6 +359,11 @@ public class TabPanelWithDropdowns extends Composite {
             }
         }
         return null;
+    }
+
+    public void addTabBarCustomWidget(final Widget customWidget) {
+        this.customWidgetsPanel.add(customWidget);
+        this.customWidgetsPanel.setCellHorizontalAlignment(customWidget, endOf(LTR));
     }
 
     interface TabPanelWithDropdownsBinder

@@ -17,6 +17,7 @@
 package org.uberfire.client.workbench.widgets.multipage;
 
 import com.google.gwt.user.client.ui.IsWidget;
+import com.google.gwt.user.client.ui.Widget;
 
 public interface MultiPageEditor extends IsWidget {
 
@@ -38,4 +39,6 @@ public interface MultiPageEditor extends IsWidget {
                    final String label);
 
     void clear();
+
+    void addTabBarCustomWidget(final Widget customWidget);
 }
