@@ -25,12 +25,12 @@ import org.uberfire.java.nio.file.spi.FileSystemProvider;
 
 public class SimpleUnixFileSystem extends BaseSimpleFileSystem {
 
-    final FileStore fileStore = new SimpleUnixFileStore(null);
+    protected FileStore fileStore;
 
-    SimpleUnixFileSystem(final FileSystemProvider provider,
+    protected SimpleUnixFileSystem(final FileSystemProvider provider,
                          final String path) {
-        super(provider,
-              path);
+        super(provider,path);
+        fileStore = new SimpleUnixFileStore(null);
     }
 
     @Override
