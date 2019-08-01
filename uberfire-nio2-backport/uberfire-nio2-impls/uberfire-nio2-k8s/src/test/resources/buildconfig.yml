@@ -1,0 +1,25 @@
+kind: BuildConfig
+apiVersion: v1
+metadata:
+  name: uberfire-nio2-k8s-openshift-test
+  labels:
+    name: uberfire-nio2-k8s-openshift-test
+spec:
+  source:
+    git:
+      uri: "https://github.com/xiezhang7/appformer.git"
+      ref: "AF-2058"
+  strategy:
+    sourceStrategy:
+      from:
+        kind: DockerImage
+        name: 'fabric8/s2i-java'
+      env:
+        - name: MAVEN_ARGS
+          value: 'package -Dfull -e'
+        - name: MAVEN_CLEAR_REPO
+          value: 'true'
+        - name: MAVEN_ARGS_APPEND
+          value: '-am -pl :uberfire-nio2-k8s'
+        - name: ARTIFACT_DIR
+          value: 'uberfire-nio2-backport/uberfire-nio2-impls/uberfire-nio2-k8s/target'
