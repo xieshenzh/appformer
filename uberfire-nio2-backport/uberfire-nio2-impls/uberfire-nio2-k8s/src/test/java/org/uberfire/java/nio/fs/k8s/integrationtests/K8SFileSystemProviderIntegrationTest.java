@@ -1,0 +1,138 @@
+/*
+ * Copyright 2019 Red Hat, Inc. and/or its affiliates.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.uberfire.java.nio.fs.k8s.integrationtests;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.uberfire.java.nio.file.FileAlreadyExistsException;
+import org.uberfire.java.nio.file.FileSystem;
+import org.uberfire.java.nio.file.Path;
+import org.uberfire.java.nio.file.spi.FileSystemProvider;
+import org.uberfire.java.nio.fs.k8s.K8SFileSystemProvider;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+public class K8SFileSystemProviderIntegrationTest {
+
+    private static final String KUBERNETES_MASTER_API_URL = "put-your-api-URL";
+    private static final String KUBERNETES_MASTER_API_TOKEN = "put-your-api-token";
+    private static final String TEST_NAMESPACE = "k8sfsp-test";
+    private static KubernetesClient client;
+
+    protected static final FileSystemProvider fsProvider = new K8SFileSystemProvider();
+
+    @BeforeClass
+    public static void setup() {
+        System.setProperty(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, KUBERNETES_MASTER_API_URL);
+        System.setProperty(Config.KUBERNETES_OAUTH_TOKEN_SYSTEM_PROPERTY, KUBERNETES_MASTER_API_TOKEN);
+        System.setProperty(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, TEST_NAMESPACE);
+
+        Config config = new ConfigBuilder()
+                .withMasterUrl(KUBERNETES_MASTER_API_URL)
+                .withOauthToken(KUBERNETES_MASTER_API_TOKEN)
+                .withTrustCerts(true)
+                .withNamespace(TEST_NAMESPACE)
+                .build();
+        client = new DefaultKubernetesClient(config);
+        client.namespaces().createNew().withNewMetadata()
+                                       .withName(TEST_NAMESPACE)
+                                       .endMetadata()
+                                       .done();
+    }
+
+    @After
+    public void cleanNamespace() {
+        client.configMaps().inNamespace(TEST_NAMESPACE).delete();
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        client.namespaces().withName(TEST_NAMESPACE).delete();
+        client.close();
+        System.clearProperty(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY);
+        System.clearProperty(Config.KUBERNETES_OAUTH_TOKEN_SYSTEM_PROPERTY);
+        System.clearProperty(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY);
+    }
+
+    @Test
+    public void simpleRootFolderCreateDeleteTest() {
+        final FileSystem fileSystem = fsProvider.getFileSystem(URI.create("default:///"));
+        Path folderInRootFolder = fileSystem.getPath("/test");
+
+        // Folder doesn't exist yet, therefore cannot be deleted. Is there a way how to check that file exists in filesystem?
+        assertThat(fsProvider.deleteIfExists(folderInRootFolder)).isFalse();
+
+        fsProvider.createDirectory(folderInRootFolder);
+        assertThat(fsProvider.deleteIfExists(folderInRootFolder)).isTrue();
+    }
+
+    @Test
+    public void simpleRootFileCreateDeleteTest() throws IOException {
+        final FileSystem fileSystem = fsProvider.getFileSystem(URI.create("default:///"));
+        Path fileInRootFolder = fileSystem.getPath("/test.txt");
+
+        // Folder doesn't exist yet, therefore cannot be deleted. Is there a way how to check that file exists in filesystem?
+        assertThat(fsProvider.deleteIfExists(fileInRootFolder)).isFalse();
+
+        createOrEditFile(fileInRootFolder, "Hello");
+        assertThat(fsProvider.deleteIfExists(fileInRootFolder)).isTrue();
+    }
+
+    @Test(expected = FileAlreadyExistsException.class)
+    public void simpleRootFolderCreateDuplicateFolderTest() {
+        final FileSystem fileSystem = fsProvider.getFileSystem(URI.create("default:///"));
+        Path folderInRootFolder = fileSystem.getPath("/test");
+
+        fsProvider.createDirectory(folderInRootFolder);
+        fsProvider.createDirectory(folderInRootFolder);
+    }
+
+    @Test
+    public void simpleRootFileEditFileTest() throws IOException {
+        final FileSystem fileSystem = fsProvider.getFileSystem(URI.create("default:///"));
+        Path fileInRootFolder = fileSystem.getPath("/test.txt");
+
+        createOrEditFile(fileInRootFolder, "Hello");
+        assertThat(readFile(fileInRootFolder)).isEqualTo("Hello");
+        createOrEditFile(fileInRootFolder, "Welcome");
+        assertThat(readFile(fileInRootFolder)).isEqualTo("Welcome");
+    }
+
+    private void createOrEditFile(Path file, String fileContent) throws IOException {
+        try (OutputStream fileStream = fsProvider.newOutputStream(file)) {
+            fileStream.write(fileContent.getBytes());
+            fileStream.flush();
+        }
+    }
+
+    private String readFile(Path file) throws IOException {
+        try (InputStream fileStream = fsProvider.newInputStream(file)) {
+            return new String(fileStream.readAllBytes());
+        }
+    }
+}
