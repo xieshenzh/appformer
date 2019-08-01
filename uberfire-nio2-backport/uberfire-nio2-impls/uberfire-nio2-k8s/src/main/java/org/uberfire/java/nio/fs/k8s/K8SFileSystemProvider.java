@@ -113,9 +113,12 @@ public class K8SFileSystemProvider extends SimpleFileSystemProvider implements C
                                 final FileAttribute<?>... attrs) throws UnsupportedOperationException, 
         FileAlreadyExistsException, IOException, SecurityException {
         checkNotNull("dir",dir);
-        executeCloudFunction(client -> getFsObjCM(client, dir), KubernetesClient.class)
-            .orElseThrow(() -> new FileAlreadyExistsException(dir.toString()));
-        
+
+        Optional<ConfigMap> directoryCm = executeCloudFunction(client -> getFsObjCM(client, dir), KubernetesClient.class);
+        if (directoryCm.isPresent()) {
+            throw new FileAlreadyExistsException(dir.toString());
+        }
+
         executeCloudFunction(client -> createOrReplaceFSCM(client, 
                                                            dir,
                                                            createOrReplaceParentDirFSCM(client, dir, 0L),

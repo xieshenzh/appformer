@@ -52,7 +52,7 @@ public class K8SFileSystemUtils {
         Path parent = Optional.ofNullable(self.getParent()).orElseThrow(IllegalArgumentException::new);
         Map<String, String> parentContent = Optional.ofNullable(getFsObjCM(client, parent))
                 .map(ConfigMap::getData)
-                .orElseGet(Collections::emptyMap);
+                .orElseGet(HashMap::new);
         parentContent.put(selfName, String.valueOf(selfSize));
         final long parentSize = parentContent.values().stream().mapToLong(Long::parseLong).sum();
 
