@@ -30,6 +30,11 @@
   <name>UberFire NIO.2 :: K8S Impl</name>
   <description>UberFire NIO.2 :: K8S Impl</description>
 
+  <properties>
+    <!-- Skip integration tests by default, they are enabled in openshift profile as the tests need connection to external OpenShift instance. -->
+    <skipITs>true</skipITs>
+  </properties>
+
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -106,16 +111,12 @@
       <groupId>io.fabric8</groupId>
       <artifactId>kubernetes-server-mock</artifactId>
       <scope>test</scope>
-<!--       <exclusions> -->
-<!--         <exclusion> -->
-<!--           <groupId>com.sun</groupId> -->
-<!--           <artifactId>tools</artifactId> -->
-<!--         </exclusion> -->
-<!--         <exclusion> -->
-<!--           <groupId>io.sundr</groupId> -->
-<!--           <artifactId>sundr-codegen</artifactId> -->
-<!--         </exclusion> -->
-<!--       </exclusions> -->
+      <exclusions>
+        <exclusion>
+          <groupId>com.sun</groupId>
+          <artifactId>tools</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.fabric8</groupId>
@@ -127,9 +128,42 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>ban-duplicated-classes</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <banDuplicateClasses>
+                  <dependencies combine.children="append">
+                    <!-- sundr-codegen is required to compile test classes. -->
+                    <dependency>
+                      <groupId>io.sundr</groupId>
+                      <artifactId>sundr-codegen</artifactId>
+                      <ignoreClasses>
+                        <ignoreClass>*</ignoreClass>
+                      </ignoreClasses>
+                    </dependency>
+                  </dependencies>
+                </banDuplicateClasses>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -163,4 +197,28 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>openshift</id>
+      <properties>
+        <skipITs>false</skipITs>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <systemProperties>
+                <!-- Properties for connection to external OpenShift for integration tests. -->
+                <kubernetes.master>${kubernetes.master}</kubernetes.master>
+                <kubernetes.auth.token>${kubernetes.auth.token}</kubernetes.auth.token>
+              </systemProperties>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

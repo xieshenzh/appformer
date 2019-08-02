@@ -20,11 +20,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,8 +41,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class K8SFileSystemProviderIntegrationTest {
 
-    private static final String KUBERNETES_MASTER_API_URL = "put-your-api-URL";
-    private static final String KUBERNETES_MASTER_API_TOKEN = "put-your-api-token";
+    private static final String KUBERNETES_MASTER_API_URL = System.getProperty(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY);
+    private static final String KUBERNETES_MASTER_API_TOKEN = System.getProperty(Config.KUBERNETES_OAUTH_TOKEN_SYSTEM_PROPERTY);
     private static final String TEST_NAMESPACE = "k8sfsp-test";
     private static KubernetesClient client;
 
@@ -48,8 +50,6 @@ public class K8SFileSystemProviderIntegrationTest {
 
     @BeforeClass
     public static void setup() {
-        System.setProperty(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, KUBERNETES_MASTER_API_URL);
-        System.setProperty(Config.KUBERNETES_OAUTH_TOKEN_SYSTEM_PROPERTY, KUBERNETES_MASTER_API_TOKEN);
         System.setProperty(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY, TEST_NAMESPACE);
 
         Config config = new ConfigBuilder()
@@ -74,8 +74,6 @@ public class K8SFileSystemProviderIntegrationTest {
     public static void tearDown() {
         client.namespaces().withName(TEST_NAMESPACE).delete();
         client.close();
-        System.clearProperty(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY);
-        System.clearProperty(Config.KUBERNETES_OAUTH_TOKEN_SYSTEM_PROPERTY);
         System.clearProperty(Config.KUBERNETES_NAMESPACE_SYSTEM_PROPERTY);
     }
 
@@ -132,7 +130,7 @@ public class K8SFileSystemProviderIntegrationTest {
 
     private String readFile(Path file) throws IOException {
         try (InputStream fileStream = fsProvider.newInputStream(file)) {
-            return new String(fileStream.readAllBytes());
+            return IOUtils.toString(fileStream, StandardCharsets.UTF_8.name());
         }
     }
 }
