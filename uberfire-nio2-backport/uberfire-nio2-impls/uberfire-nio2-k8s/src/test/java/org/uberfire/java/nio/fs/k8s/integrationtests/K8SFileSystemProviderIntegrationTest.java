@@ -33,6 +33,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.uberfire.java.nio.file.FileAlreadyExistsException;
 import org.uberfire.java.nio.file.FileSystem;
+import org.uberfire.java.nio.file.NoSuchFileException;
 import org.uberfire.java.nio.file.Path;
 import org.uberfire.java.nio.file.spi.FileSystemProvider;
 import org.uberfire.java.nio.fs.k8s.K8SFileSystemProvider;
@@ -119,6 +120,16 @@ public class K8SFileSystemProviderIntegrationTest {
         assertThat(readFile(fileInRootFolder)).isEqualTo("Hello");
         createOrEditFile(fileInRootFolder, "Welcome");
         assertThat(readFile(fileInRootFolder)).isEqualTo("Welcome");
+        createOrEditFile(fileInRootFolder, "Hi");
+        assertThat(readFile(fileInRootFolder)).isEqualTo("Hi");
+    }
+
+    @Test(expected = NoSuchFileException.class)
+    public void inputStreamFromNotExistingFileTest() throws IOException {
+        final FileSystem fileSystem = fsProvider.getFileSystem(URI.create("default:///"));
+        Path fileInRootFolder = fileSystem.getPath("/test.txt");
+
+        readFile(fileInRootFolder);
     }
 
     private void createOrEditFile(Path file, String fileContent) throws IOException {
