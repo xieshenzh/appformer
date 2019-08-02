@@ -16,7 +16,7 @@ spec:
         name: 'fabric8/s2i-java'
       env:
         - name: MAVEN_ARGS
-          value: 'package -Dfull -e'
+          value: 'package -Dfull -Popenshift-test -e'
         - name: MAVEN_CLEAR_REPO
           value: 'true'
         - name: MAVEN_ARGS_APPEND
