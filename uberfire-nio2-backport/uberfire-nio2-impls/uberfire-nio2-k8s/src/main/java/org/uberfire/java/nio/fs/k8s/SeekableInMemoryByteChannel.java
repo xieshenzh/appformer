@@ -184,7 +184,7 @@ public class SeekableInMemoryByteChannel implements SeekableByteChannel {
          * Allocate a new array of enough space (either current size or position + input2.length, 
          * whichever is greater)
          */
-        final int newSize = position < input1.length ? input1.length + input2.length : position + input2.length;
+        final int newSize = position + input2.length < input1.length ? input1.length : position + input2.length;
         final byte[] merged = new byte[newSize];
         System.arraycopy(input1, 0, merged, 0, input1.length);
         System.arraycopy(input2, 0, merged, position, input2.length);
